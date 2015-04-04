@@ -71,7 +71,7 @@ optional arguments:
   --conf C            threads configurations (Default to many)
 ```
 
-For example, to simulate the workflow using a initial screening dataset and using experiments from a pre-defined follow up dataset you would run the following:
+For example, to simulate the workflow using an initial screening dataset and using experiments from a pre-defined follow up dataset you would run the following:
 
 ```
 $ python sbloopy.py real data/real/subset.sif data/real/data_norm_midas_screening.csv 1 data/real/data_norm_midas_followup.csv 1 --clingo clingo-4.3.0 --threads 4 --conf portfolio.txt
