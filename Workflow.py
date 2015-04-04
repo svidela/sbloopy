@@ -1,14 +1,17 @@
 import logging
 
+from numpy import random
+
 from zope import component
 from pyzcasp import potassco
 from caspo import core, learn, analyze, design
 
 class Workflow(object):
     
-    def __init__(self, db, pkn, dconf, mexps=80, lexps=False):
+    def __init__(self, db, pkn, land, dconf, mexps=80, lexps=False):
         self.db = db
         self.pkn = pkn
+        self.land = land
         self.dconf = dconf
         self.mexps = mexps
         self.lexps = lexps
@@ -26,6 +29,7 @@ class Workflow(object):
         self.logger.addHandler(ch)
     
     def perform_experiments(self, idmodel, data, exps):
+        random.shuffle(exps)
         while exps:
             optdesign = exps.pop()
             nexps = self.db.check_clampings(idmodel, optdesign.clampings)
@@ -33,7 +37,7 @@ class Workflow(object):
             if ne > 0:
                 if ne + data.nexps <= self.mexps:
                     self.logger.info("\t%s experiment(s) added to the dataset" % ne)
-                    self.db.insert_benchmarking_data(idmodel, nexps, self.it)
+                    self.db.insert_benchmarking_data(idmodel, nexps, self.it+1)
                     return False
                 else:
                     self.logger.info("\tNumber of allowed experiments reached")
@@ -61,7 +65,7 @@ class Workflow(object):
                 fit = 0
                 size = 0
                 self.logger.info("\tLearning without tolerance")
-                learner = learn.learner(self.pkn, data, 1, 4, potassco.IClingo, "round", 100)
+                learner = learn.learner(self.pkn, data, 1, self.land, potassco.IClingo, "round", 100)
                 networks = learner.learn(fit,size)
                 self.logger.info("\tAnalyzing %s networks" % len(networks))
                 behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
