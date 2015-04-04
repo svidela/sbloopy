@@ -335,7 +335,7 @@ class rDB(DB):
             cur.execute("INSERT INTO benchmark_data SELECT *, 0 as it  FROM screening WHERE \
                     idmodel=:idmodel", {'idmodel': idmodel})
 
-    def insert_data(self, idmodel, screening, followup):
+    def insert_data(self, idmodel, screening, stime, followup, ftime):
         """
         Insert screening dataset into screening table and followup dataset into dataset table
         """
@@ -346,7 +346,7 @@ class rDB(DB):
         with con:
             cur = con.cursor()
                 
-            for i, clamping, obs in followup.at(1):
+            for i, clamping, obs in followup.at(ftime):
                 dc = dict(clamping)
                 row = dict.fromkeys(header, 0)
                 row['idmodel'] = idmodel
@@ -368,7 +368,7 @@ class rDB(DB):
                 vals = str(tuple(row.values()))
                 cur.execute("INSERT INTO dataset %s VALUES %s" % (cols, vals))
                 
-            for i, clamping, obs in screening.at(1):
+            for i, clamping, obs in screening.at(stime):
                 dc = dict(clamping)
                 
                 ex = [k for k in dc if k not in self.setup.stimuli and dc[k] == 1]
