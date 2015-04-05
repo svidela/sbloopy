@@ -78,4 +78,4 @@ $ python sbloopy.py real data/real/subset.sif data/real/data_norm_midas_screenin
 ```
 
 ## About portfolio.txt
-In both, in silico and real benchmarking, if you run with multi-threading solving you should also specify a portfolio file, e.g., portfolio.txt, as in clingo-4.3.0 there is a known bug when using multi-threading and default configurations. In particular, you have to avoid the usage of unsatisfiable-core optimization. The file 'portfolio.txt' was modified accordingly from the output of calling 'clingo-4.3.0 --print-portfolio'
+In both, in silico and real benchmarking, if you run with multi-threading solving you should also specify a portfolio file, e.g., portfolio.txt, as in clingo-4.3.0 there is a known bug when using multi-threading and default configurations. In particular, you have to avoid the usage of unsatisfiable-core optimization. The file _portfolio.txt_ was modified accordingly from the output of calling _clingo-4.3.0 --print-portfolio_
