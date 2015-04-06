@@ -37,6 +37,7 @@ For example, to simulate 100 in silico benchmarks derived from a given PKN and e
 - number of AND gates in gold standards between 2 and 4
 - multi-threading solving using 4 threads
 - maximum of 3 stimuli and 2 inhibitors for the experimental designs
+
 you would run the following:
 
 ```
