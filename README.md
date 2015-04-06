@@ -15,10 +15,10 @@ usage: sbloopy insilico [-h] [--clingo C] [--and-len L] [--max-exps E]
 positional arguments:
   pkn                 prior knowledge network in SIF format
   midas               experimental setup in MIDAS file
-  lsize               lower bound for golden standard size
-  usize               upper bound for golden standard size
-  lands               lower bound for num of AND gates in golden standard
-  uands               upper bound for num of AND gates in golden standard
+  lsize               lower bound for gold standard size
+  usize               upper bound for gold standard size
+  lands               lower bound for num of AND gates in gold standard
+  uands               upper bound for num of AND gates in gold standard
 
 optional arguments:
   -h, --help          show this help message and exit
