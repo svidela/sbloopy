@@ -1,6 +1,7 @@
 import sqlite3 as lite
 
-from numpy import random
+import numpy as np
+import random
 from collections import defaultdict
 
 from pyzcasp import asp, potassco
@@ -259,7 +260,7 @@ class iDB(DB):
 
                     for readout in self.setup.readouts:
                         row[readout] = golden.prediction(readout, clamping)
-                        noise = random.beta(1,5)
+                        noise = np.random.beta(1,5)
                         if row[readout] == 1:
                             row[readout] -= noise
                         else:
@@ -308,7 +309,46 @@ class iDB(DB):
                     
             cur.execute("INSERT INTO benchmark_data SELECT *, 0 as it  FROM dataset WHERE \
                     idmodel=:idmodel AND %s <= 1 AND %s <= 1" % (sw, iw), {'idmodel': idmodel})
+                    
+    def get_random_dataset(self, idmodel, nexp, max_stimuli=0, max_inhibitors=0):
+        con = lite.connect(self.name)
 
+        with con:    
+            sw = self.setup.stimuli[0]
+            for s in self.setup.stimuli[1:]:
+                sw += "+" + s
+        
+            iw = self.setup.inhibitors[0]+'i'
+            for i in self.setup.inhibitors[1:]:
+                iw += "+" + i+'i'
+        
+            con.row_factory = lite.Row
+            cur = con.cursor()
+            if max_stimuli > 0 and max_inhibitors > 0:
+                cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND \
+                    ({sum_inh} <= :mi AND {sum_sti} BETWEEN 2 AND :ms OR {sum_inh} BETWEEN 2 AND :mi)".format(sum_sti=sw, sum_inh=iw), 
+                    {'idmodel': idmodel, 'ms': max_stimuli, 'mi': max_inhibitors})
+                    
+            elif max_stimuli > 0 or max_inhibitors > 0:
+                if max_stimuli > 0:
+                    cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND \
+                                (%s BETWEEN 2 AND :ms OR %s >= 2)" % (sw, iw), 
+                                {'idmodel': idmodel, 'ms': max_stimuli})
+                else:
+                    cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND \
+                                (%s >= 2 OR %s BETWEEN 2 AND :mi)" % (sw, iw), 
+                                {'idmodel': idmodel, 'mi': max_inhibitors})
+                                
+            else:
+                cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND \
+                            (%s > 1 OR %s > 1)" % (sw, iw), {'idmodel': idmodel})
+                        
+            
+            rows = cur.fetchall()
+            exps = random.sample(rows, nexp)
+            dataset = Dataset.from_db_rows(exps, self.setup)
+            
+        return dataset
 
 class rDB(DB):
     
@@ -392,4 +432,4 @@ class rDB(DB):
                     cols = str(tuple(row.keys()))
                     vals = str(tuple(row.values()))
                     cur.execute("INSERT INTO screening %s VALUES %s" % (cols, vals))
-
+                    

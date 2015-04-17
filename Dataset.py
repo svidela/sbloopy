@@ -1,4 +1,5 @@
 import math
+import random
 from collections import defaultdict
 
 from caspo import core
@@ -66,3 +67,25 @@ class Dataset(object):
         for i, (cues, obs) in enumerate(zip(self.cues, self.obs)):
             yield i, cues, obs[time]
 
+    def add(self, exps):
+        for cues, obs in exps:
+            self.cues.append(cues)
+            self.obs.append(obs)
+            
+            self.nexps += 1
+            for t in self.times:
+                self.nobs[t] += len(obs[t])
+
+    def pop_sample(self, n):
+        exps = []
+        for _ in xrange(n):
+            i = random.randint(0, self.nexps - 1)
+            
+            self.nexps -= 1
+            for t in self.times:
+                self.nobs[t] -= len(self.obs[i][t])
+            
+            exps.append((self.cues.pop(i), self.obs.pop(i)))
+            
+        return exps
+        

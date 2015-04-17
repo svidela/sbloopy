@@ -21,11 +21,10 @@ class Workflow(object):
         
         fh = logging.FileHandler('workflow-%s.log' % self.db.name, 'w')
         fh.setLevel(logging.INFO)
+        self.logger.addHandler(fh)
         
         ch = logging.StreamHandler()
         ch.setLevel(logging.INFO)
-        
-        self.logger.addHandler(fh)
         self.logger.addHandler(ch)
     
     def perform_experiments(self, idmodel, data, exps):
@@ -114,3 +113,34 @@ class Workflow(object):
                     done = True
             
             self.db.insert_last_it(idmodel, self.it)
+            
+    def run_random(self, n, idmodel, step):
+        all_data = self.db.get_all_dataset(idmodel)
+        
+        runs = []
+        for i in xrange(n):
+            self.logger.info("Random run %s" % i)
+            
+            dataset = self.db.get_benchmarking_data(idmodel, it=0)        
+            rand_dataset = self.db.get_random_dataset(idmodel, self.mexps - dataset.nexps, **self.dconf)
+
+            mse = {}
+            while dataset.nexps < self.mexps:
+                sample = min(step, self.mexps - dataset.nexps)
+                dataset.add(rand_dataset.pop_sample(sample))
+    
+                self.logger.info("\tLearning without tolerance using %s experiments" % dataset.nexps)
+                learner = learn.learner(self.pkn, dataset, 1, self.land, potassco.IClingo, "round", 100)
+                networks = learner.learn(0,0)
+                
+                self.logger.info("\tAnalyzing %s networks" % len(networks))
+                behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
+
+                mse[dataset.nexps] = behaviors.mse(all_data, 1)
+
+            runs.append(mse)
+        
+        writer = component.getUtility(core.ICsvWriter)
+        writer.load(runs, runs[0].keys())
+        writer.write("random-%s-%s.csv" % (idmodel, n), ".")
+
