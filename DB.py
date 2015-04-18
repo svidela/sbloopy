@@ -203,6 +203,14 @@ class DB(object):
             cur = con.cursor()
             cur.execute("INSERT INTO benchmark_behaviors (idmodel, it, fit, size, networks, behaviors) \
                 VALUES (%s,%s,%s,%s,%s,%s)" % (idmodel, it, fit, size, networks, behaviors))
+                
+    def get_random_dataset(self, idmodel, nexp, max_stimuli=0, max_inhibitors=0):
+        rows = self.get_population_rows(idmodel, max_stimuli, max_inhibitors)
+        exps = random.sample(rows, nexp)
+        dataset = Dataset.from_db_rows(exps, self.setup)
+            
+        return dataset
+    
 
 class iDB(DB):
     
@@ -310,7 +318,7 @@ class iDB(DB):
             cur.execute("INSERT INTO benchmark_data SELECT *, 0 as it  FROM dataset WHERE \
                     idmodel=:idmodel AND %s <= 1 AND %s <= 1" % (sw, iw), {'idmodel': idmodel})
                     
-    def get_random_dataset(self, idmodel, nexp, max_stimuli=0, max_inhibitors=0):
+    def get_population_rows(self, idmodel, max_stimuli=0, max_inhibitors=0):
         con = lite.connect(self.name)
 
         with con:    
@@ -326,7 +334,7 @@ class iDB(DB):
             cur = con.cursor()
             if max_stimuli > 0 and max_inhibitors > 0:
                 cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND \
-                    ({sum_inh} <= :mi AND {sum_sti} BETWEEN 2 AND :ms OR {sum_inh} BETWEEN 2 AND :mi)".format(sum_sti=sw, sum_inh=iw), 
+                    (({sum_inh} <= :mi AND {sum_sti} BETWEEN 2 AND :ms) OR ({sum_sti} <= :ms AND {sum_inh} BETWEEN 2 AND :mi))".format(sum_sti=sw, sum_inh=iw), 
                     {'idmodel': idmodel, 'ms': max_stimuli, 'mi': max_inhibitors})
                     
             elif max_stimuli > 0 or max_inhibitors > 0:
@@ -345,10 +353,8 @@ class iDB(DB):
                         
             
             rows = cur.fetchall()
-            exps = random.sample(rows, nexp)
-            dataset = Dataset.from_db_rows(exps, self.setup)
             
-        return dataset
+        return rows
 
 class rDB(DB):
     
@@ -432,4 +438,38 @@ class rDB(DB):
                     cols = str(tuple(row.keys()))
                     vals = str(tuple(row.values()))
                     cur.execute("INSERT INTO screening %s VALUES %s" % (cols, vals))
+                    
+    def get_population_rows(self, idmodel, max_stimuli=0, max_inhibitors=0):
+        con = lite.connect(self.name)
+
+        with con:    
+            sw = self.setup.stimuli[0]
+            for s in self.setup.stimuli[1:]:
+                sw += "+" + s
+        
+            iw = self.setup.inhibitors[0]+'i'
+            for i in self.setup.inhibitors[1:]:
+                iw += "+" + i+'i'
+        
+            con.row_factory = lite.Row
+            cur = con.cursor()
+            if max_stimuli > 0 and max_inhibitors > 0:
+                cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND \
+                    ({sum_inh} <= :mi OR {sum_sti} <= :ms)".format(sum_sti=sw, sum_inh=iw), 
+                    {'idmodel': idmodel, 'ms': max_stimuli, 'mi': max_inhibitors})
+                    
+            elif max_stimuli > 0 or max_inhibitors > 0:
+                if max_stimuli > 0:
+                    cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND %s <= :ms" % (sw, iw), 
+                                {'idmodel': idmodel, 'ms': max_stimuli})
+                else:
+                    cur.execute("SELECT * FROM dataset where idmodel=:idmodel AND %s <= :mi" % (sw, iw), 
+                                {'idmodel': idmodel, 'mi': max_inhibitors})
+                                
+            else:
+                cur.execute("SELECT * FROM dataset where idmodel=:idmodel", {'idmodel': idmodel})
+            
+            rows = cur.fetchall()
+            
+        return rows
                     

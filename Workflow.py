@@ -142,5 +142,5 @@ class Workflow(object):
         
         writer = component.getUtility(core.ICsvWriter)
         writer.load(runs, runs[0].keys())
-        writer.write("random-%s-%s.csv" % (idmodel, n), ".")
+        writer.write("random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
 

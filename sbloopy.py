@@ -105,15 +105,12 @@ if __name__ == "__main__":
         workflow = Workflow(db, graph, args.len, dconf, mexps=args.mexps, lexps=followup)
         workflow.run(args.n)
         
-    else:        
-        if args.type == 'insilico':
-            reader = component.getUtility(core.ICsvReader)
-            reader.read(args.midas)
-            dataset = core.IDataset(reader)
+    else:
+        reader = component.getUtility(core.ICsvReader)
+        reader.read(args.midas)
+        dataset = core.IDataset(reader)
             
-            db = iDB('insilico', dataset.setup)
+        db = iDB('insilico', dataset.setup) if args.type == 'insilico' else rDB('real', dataset.setup)
             
-            workflow = Workflow(db, graph, args.len, dconf, mexps=args.mexps)
-            workflow.run_random(args.n, args.bench, args.step)
-        else:
-            print "Not implemented yet"
+        workflow = Workflow(db, graph, args.len, dconf, mexps=args.mexps)
+        workflow.run_random(args.n, args.bench, args.step)
