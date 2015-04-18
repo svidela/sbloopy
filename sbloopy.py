@@ -29,10 +29,10 @@ if __name__ == "__main__":
     
     insilico = subparsers.add_parser("insilico", parents=[pparser, pparser2])
     insilico.add_argument("midas", help="experimental setup in MIDAS file")
-    insilico.add_argument("lsize", help="lower bound for golden standard size")
-    insilico.add_argument("usize", help="upper bound for golden standard size")
-    insilico.add_argument("lands", help="lower bound for num of AND gates in golden standard")
-    insilico.add_argument("uands", help="upper bound for num of AND gates in golden standard")
+    insilico.add_argument("lsize", help="lower bound for gold standard size")
+    insilico.add_argument("usize", help="upper bound for gold standard size")
+    insilico.add_argument("lands", help="lower bound for num of AND gates in gold standard")
+    insilico.add_argument("uands", help="upper bound for num of AND gates in gold standard")
     
     
     real = subparsers.add_parser("real", parents=[pparser, pparser2])
