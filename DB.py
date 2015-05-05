@@ -49,6 +49,7 @@ class DB(object):
             
             cur.execute("DROP TABLE IF EXISTS dataset")
             cur.execute("CREATE TABLE dataset (%s)" % self.get_data_header())
+            cur.execute("CREATE INDEX main.dataset_idmodel ON dataset (idmodel ASC)")
         
             cur.execute("DROP TABLE IF EXISTS benchmark_iterations")
             cur.execute("CREATE TABLE benchmark_iterations (idmodel INT, it INT, FOREIGN KEY(idmodel) REFERENCES model(id))")
