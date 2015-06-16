@@ -211,7 +211,17 @@ class DB(object):
         dataset = Dataset.from_db_rows(exps, self.setup)
             
         return dataset
-    
+        
+    def get_last_it(self, idmodel):
+        con = lite.connect(self.name)
+
+        it = 0
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT it from benchmark_iterations WHERE idmodel=:idmodel", {'idmodel':idmodel})
+            it = cur.fetchone()[0]
+
+        return it
 
 class iDB(DB):
     

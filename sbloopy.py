@@ -33,13 +33,14 @@ if __name__ == "__main__":
     insilico.add_argument("usize", help="upper bound for gold standard size")
     insilico.add_argument("lands", help="lower bound for num of AND gates in gold standard")
     insilico.add_argument("uands", help="upper bound for num of AND gates in gold standard")
-    
+    insilico.add_argument("--resume", dest="resume", action="store_true", help="resume a previous execution")
     
     real = subparsers.add_parser("real", parents=[pparser, pparser2])
     real.add_argument("screening", help="experimental screening in MIDAS file")
     real.add_argument("stime", type=int, help="time-point in screening dataset")
     real.add_argument("followup", help="experimental follow up in MIDAS file")
     real.add_argument("ftime", type=int, help="time-point in follow up dataset")
+    real.add_argument("--resume", dest="resume", action="store_true", help="resume a previous execution")
     
     random = subparsers.add_parser("random", parents=[pparser])
     random.add_argument("midas", help="experimental setup in MIDAS file")
@@ -78,12 +79,13 @@ if __name__ == "__main__":
         
         db = iDB('insilico', dataset.setup)
         
-        db.create_db()
-        db.load_pkn(graph, args.len)
-        db.generate_benchmarks(args.n, (args.lsize,args.usize), (args.lands,args.uands), args.len)
+        if not args.resume:
+            db.create_db()
+            db.load_pkn(graph, args.len)
+            db.generate_benchmarks(args.n, (args.lsize,args.usize), (args.lands,args.uands), args.len)
 
         workflow = Workflow(db, graph, args.len, dconf, mexps=args.mexps)
-        workflow.run(args.n)
+        workflow.run(args.n, args.resume)
         
     elif args.cmd == 'real':
         dconf['max_experiments'] = args.exps
@@ -96,14 +98,16 @@ if __name__ == "__main__":
         screening = core.IDataset(reader)
         
         db = rDB('real', followup.setup)
-        db.create_db()
-        db.load_pkn(graph, args.len)
         
-        for idmodel in xrange(args.n):
-            db.insert_data(idmodel, screening, args.stime, followup, args.ftime)
+        if not args.resume:
+            db.create_db()
+            db.load_pkn(graph, args.len)
+        
+            for idmodel in xrange(args.n):
+                db.insert_data(idmodel, screening, args.stime, followup, args.ftime)
     
         workflow = Workflow(db, graph, args.len, dconf, mexps=args.mexps, lexps=followup)
-        workflow.run(args.n)
+        workflow.run(args.n, args.resume)
         
     else:
         reader = component.getUtility(core.ICsvReader)

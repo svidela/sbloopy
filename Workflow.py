@@ -46,14 +46,18 @@ class Workflow(object):
                 self.logger.info("\tAll optimal experimental designs were performed already")
                 return True
                 
-    def run(self, nb=1):
-        
+    def run(self, nb=1, resume=False):
+        last = -1
         for idmodel in range(nb):
-            self.it = -1
+            if resume:
+                last = self.db.get_last_it(idmodel)
+                self.it = last - 1
+            else:
+                self.it = -1
+                self.db.init(idmodel)
+                
             self.logger.info("Benchmark %s" % idmodel)
-            
             all_data = self.db.get_all_dataset(idmodel)
-            self.db.init(idmodel)
         
             done = False
             while not done:
@@ -71,7 +75,9 @@ class Workflow(object):
 
                 learning = behaviors.mse(data, 1)
                 testing = behaviors.mse(all_data, 1)
-                self.db.insert_mse(idmodel, self.it, learning, testing)
+                
+                if last < self.it:
+                    self.db.insert_mse(idmodel, self.it, learning, testing)
 
                 if len(behaviors) == 1:
                     while len(behaviors) == 1 and size < 5:
