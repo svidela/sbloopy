@@ -123,7 +123,8 @@ class Workflow(object):
     def run_random(self, n, idmodel, step):
         all_data = self.db.get_all_dataset(idmodel)
         
-        runs = []
+        runs_mse = []
+        runs_io = []
         for i in xrange(n):
             self.logger.info("Random run %s" % i)
             
@@ -131,6 +132,7 @@ class Workflow(object):
             rand_dataset = self.db.get_random_dataset(idmodel, self.mexps - dataset.nexps, **self.dconf)
 
             mse = {}
+            io = {}
             while dataset.nexps < self.mexps:
                 sample = min(step, self.mexps - dataset.nexps)
                 dataset.add(rand_dataset.pop_sample(sample))
@@ -143,10 +145,15 @@ class Workflow(object):
                 behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
 
                 mse[dataset.nexps] = behaviors.mse(all_data, 1)
+                io[dataset.nexps] = len(behaviors)
+                self.logger.info("\tTesting MSE equals %s - %s behaviors" % (mse[dataset.nexps],io[dataset.nexps]))
 
-            runs.append(mse)
+            runs_mse.append(mse)
+            runs_io.append(io)
         
         writer = component.getUtility(core.ICsvWriter)
-        writer.load(runs, runs[0].keys())
-        writer.write("random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
-
+        writer.load(runs_mse, runs_mse[0].keys())
+        writer.write("mse-random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
+        
+        writer.load(runs_io, runs_io[0].keys())
+        writer.write("behaviors-random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
