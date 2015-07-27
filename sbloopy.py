@@ -3,7 +3,7 @@ import os, sys, argparse
 from zope import component
 from pyzcasp import asp, potassco
 
-from caspo import core
+from caspo import core, learn, analyze, design
 
 from DB import iDB, rDB
 from Workflow import Workflow
@@ -58,10 +58,9 @@ if __name__ == "__main__":
     graph = core.IGraph(sif)
     
     if args.threads:
-        reg = component.getUtility(asp.IArgumentRegistry)
-        reg.register('caspo.learn.opt',  ["--quiet=1", "--conf=%s" % args.conf, "-t %s" % args.threads], potassco.IClasp3)
-        reg.register('caspo.learn.enum', ["--opt-mode=ignore", "0", "--conf=%s" % args.conf, "-t %s" % args.threads], potassco.IClasp3)
-        reg.register('caspo.design.opt', ["--quiet=1", "--opt-mode=optN", "--save-progress", "--conf=%s" % args.conf, "-t %s" % args.threads], potassco.IClasp3)
+        learn.register_mt(args.threads, args.conf)
+        analyze.register_mt(args.threads)
+        design.register_mt(args.threads, args.conf)
     
     dconf = {}
     if args.stimuli > 0:

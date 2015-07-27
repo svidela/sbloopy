@@ -81,40 +81,52 @@ class Workflow(object):
 
                 if len(behaviors) == 1:
                     while len(behaviors) == 1 and size < 5:
-                        size += 1
-                        self.logger.info("\tLearning with %s size tolerance" % size)
-                        networks = learner.learn(0, size)
-                        self.logger.info("\tAnalyzing %s networks" % len(networks))
-                        behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
+                        try:
+                            size += 1
+                            self.logger.info("\tLearning with %s size tolerance" % size)
+                            networks = learner.learn(0, size)
+                            self.logger.info("\tAnalyzing %s networks" % len(networks))    
+                            behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
+                        except OSError as e:
+                            self.logger.info("\t%s" % str(e))
+                            break
 
                     if len(behaviors) == 1:
                         size = 0
                         while len(behaviors) == 1 and fit < 0.05:
-                            fit += 0.01
-                            self.logger.info("\tLearning with %s fitness tolerance" % fit)
-                            networks = learner.learn(fit, 0)
-                            self.logger.info("\tAnalyzing %s networks" % len(networks))
-                            behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
+                            try:
+                                fit += 0.01
+                                self.logger.info("\tLearning with %s fitness tolerance" % fit)
+                                networks = learner.learn(fit, 0)
+                                self.logger.info("\tAnalyzing %s networks" % len(networks))
+                                behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
+                            except OSError as e:
+                                self.logger.info("\t%s" % str(e))
+                                break
             
                 if len(behaviors) > 1:
-                    self.db.insert_behaviors(idmodel, self.it, fit, size, len(networks), len(behaviors))
+                    try:
+                        self.db.insert_behaviors(idmodel, self.it, fit, size, len(networks), len(behaviors))
             
-                    designer = design.designer(behaviors, all_data.setup, self.lexps, potassco.IClingo)
-                    self.logger.info("\tDiscriminating %s behaviors" % len(behaviors))
-                    exps = designer.design(**self.dconf)
+                        designer = design.designer(behaviors, all_data.setup, self.lexps, potassco.IClingo)
+                        self.logger.info("\tDiscriminating %s behaviors" % len(behaviors))                            
+                        exps = designer.design(**self.dconf)
             
-                    if exps:
-                        self.logger.info("\t%s optimal experimental design(s)" % len(exps))
-                        done = self.perform_experiments(idmodel, data, exps)
-                    else:
-                        self.logger.info("\tCannot discriminate all behaviors pairwise")
-                        exps = designer.design(relax=1, **self.dconf)
                         if exps:
                             self.logger.info("\t%s optimal experimental design(s)" % len(exps))
                             done = self.perform_experiments(idmodel, data, exps)
                         else:
-                            self.logger.info("\tCannot generate any difference among given behaviors")
-                            done = True
+                            self.logger.info("\tCannot discriminate all behaviors pairwise")
+                            exps = designer.design(relax=1, **self.dconf)
+                            if exps:
+                                self.logger.info("\t%s optimal experimental design(s)" % len(exps))
+                                done = self.perform_experiments(idmodel, data, exps)
+                            else:
+                                self.logger.info("\tCannot generate any difference among given behaviors")
+                                done = True
+                    except OSError as e:
+                        self.logger.info("\t%s" % str(e))
+                        done = True
                 else:
                     done = True
             
@@ -123,7 +135,8 @@ class Workflow(object):
     def run_random(self, n, idmodel, step):
         all_data = self.db.get_all_dataset(idmodel)
         
-        runs = []
+        runs_mse = []
+        runs_io = []
         for i in xrange(n):
             self.logger.info("Random run %s" % i)
             
@@ -131,22 +144,37 @@ class Workflow(object):
             rand_dataset = self.db.get_random_dataset(idmodel, self.mexps - dataset.nexps, **self.dconf)
 
             mse = {}
+            io = {}
+            err = False
             while dataset.nexps < self.mexps:
-                sample = min(step, self.mexps - dataset.nexps)
-                dataset.add(rand_dataset.pop_sample(sample))
+                try:
+                    sample = min(step, self.mexps - dataset.nexps)
+                    dataset.add(rand_dataset.pop_sample(sample))
     
-                self.logger.info("\tLearning without tolerance using %s experiments" % dataset.nexps)
-                learner = learn.learner(self.pkn, dataset, 1, self.land, potassco.IClingo, "round", 100)
-                networks = learner.learn(0,0)
+                    self.logger.info("\tLearning without tolerance using %s experiments" % dataset.nexps)
+                    learner = learn.learner(self.pkn, dataset, 1, self.land, potassco.IClingo, "round", 100)
+                    networks = learner.learn(0,0)
                 
-                self.logger.info("\tAnalyzing %s networks" % len(networks))
-                behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
+                    self.logger.info("\tAnalyzing %s networks" % len(networks))
+                    behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
 
-                mse[dataset.nexps] = behaviors.mse(all_data, 1)
-
-            runs.append(mse)
+                    mse[dataset.nexps] = behaviors.mse(all_data, 1)
+                    io[dataset.nexps] = len(behaviors)
+                    self.logger.info("\tTesting MSE equals %s - %s behaviors" % (mse[dataset.nexps],io[dataset.nexps]))
+                    
+                except OSError as e:
+                    self.logger.info("\t%s" % str(e))
+                    err = True
+                    break
+            
+            if not err:
+                runs_mse.append(mse)
+                runs_io.append(io)
         
-        writer = component.getUtility(core.ICsvWriter)
-        writer.load(runs, runs[0].keys())
-        writer.write("random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
-
+        if runs_mse and runs_io:
+            writer = component.getUtility(core.ICsvWriter)
+            writer.load(runs_mse, runs_mse[0].keys())
+            writer.write("mse-random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
+        
+            writer.load(runs_io, runs_io[0].keys())
+            writer.write("behaviors-random-%s-%s-%s.csv" % (self.db.name, idmodel, n), ".")
