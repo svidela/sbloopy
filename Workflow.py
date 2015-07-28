@@ -1,5 +1,5 @@
 import logging
-
+import gc
 from numpy import random
 
 from zope import component
@@ -89,6 +89,8 @@ class Workflow(object):
                             behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
                         except OSError as e:
                             self.logger.info("\t%s" % str(e))
+                            networks = None
+                            gc.collect()
                             break
 
                     if len(behaviors) == 1:
@@ -102,6 +104,8 @@ class Workflow(object):
                                 behaviors =  analyze.behaviors(networks, all_data, potassco.IClingo)
                             except OSError as e:
                                 self.logger.info("\t%s" % str(e))
+                                networks = None
+                                gc.collect()
                                 break
             
                 if len(behaviors) > 1:
@@ -126,6 +130,9 @@ class Workflow(object):
                                 done = True
                     except OSError as e:
                         self.logger.info("\t%s" % str(e))
+                        networks = None
+                        behaviors = None
+                        gc.collect()
                         done = True
                 else:
                     done = True
@@ -165,6 +172,9 @@ class Workflow(object):
                 except OSError as e:
                     self.logger.info("\t%s" % str(e))
                     err = True
+                    networks = None
+                    behaviors = None
+                    gc.collect()
                     break
             
             if not err:

@@ -42,7 +42,7 @@ For example, to simulate 100 in silico benchmarks derived from a given PKN and e
 you would run the following:
 
 ```
-$ python sbloopy.py insilico data/insilico/pkn.sif data/insilico/dataset.csv 28 32 2 4 --clingo clingo-4.3.0 --threads 4 --conf portfolio.txt --max-stimuli 3 --max-inhibitors 2 --bench-n 100
+$ python sbloopy.py insilico data/insilico/pkn.sif data/insilico/dataset.csv 28 32 2 4 --clingo clingo-4.5.1 --threads 4 --max-stimuli 3 --max-inhibitors 2 --bench-n 100
 ```
 
 ## Using real biological data
@@ -77,7 +77,7 @@ optional arguments:
 For example, to simulate the workflow using an initial screening dataset and using experiments from a pre-defined follow up dataset you would run the following:
 
 ```
-$ python sbloopy.py real data/real/subset.sif data/real/data_norm_midas_screening.csv 1 data/real/data_norm_midas_followup.csv 1 --clingo clingo-4.3.0 --threads 4 --conf portfolio.txt
+$ python sbloopy.py real data/real/subset.sif data/real/data_norm_midas_screening.csv 1 data/real/data_norm_midas_followup.csv 1 --clingo clingo-4.5.1 --threads 4
 ```
 
 ## Using random experimental designs for validation
@@ -113,17 +113,14 @@ optional arguments:
 For example, to simulate the workflow 100 times with random experimental designs over a specific in silico benchmark, e.g. 0, going up to 96 experiments, adding 16 experiments per iteration, you would run the following:
 
 ```
-$ python sbloopy.py random data/insilico/pkn.sif data/insilico/dataset.csv insilico 0 --clingo clingo-4.3.0 --max-stimuli 3 --max-inhibitors 2 --total-exps 96 --repeat 100 --threads 4 --conf portfolio.txt
+$ python sbloopy.py random data/insilico/pkn.sif data/insilico/dataset.csv insilico 0 --clingo clingo-4.5.1 --max-stimuli 3 --max-inhibitors 2 --total-exps 96 --repeat 100 --threads 4
 ```
 
 Similarly, for running using the real biological data going up to 20 experiments, adding 4 experiments per iteration, you would run the following:
 
 ```
-$  python sbloopy.py random data/real/subset.sif data/real/data_norm_midas_followup.csv real 0 --clingo clingo-4.3.0 --max-stimuli 3 --max-inhibitors 2 --total-exps 20 --step 4 --repeat 100 --threads 4 --conf portfolio.txt
+$  python sbloopy.py random data/real/subset.sif data/real/data_norm_midas_followup.csv real 0 --clingo clingo-4.5.1 --total-exps 20 --step 4 --repeat 100 --threads 4
 ```
 
-This will generate an output file (.csv) having the (weighted) MSE resulting at each iteration for each random run.
-
-## About portfolio.txt
-In both, in silico and real benchmarking, if you run with multi-threading solving you should also specify a portfolio file, e.g., portfolio.txt, as in clingo-4.3.0 there is a known bug when using multi-threading and default configurations. In particular, you have to avoid the usage of unsatisfiable-core optimization. The file _portfolio.txt_ was modified accordingly from the output of calling _clingo-4.3.0 --print-portfolio_
+This will generate an output file (.csv) having the (weighted) MSE and an output file (.csv) having the number of optimal behaviors resulting at each iteration for each random run.
 
